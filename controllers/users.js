@@ -17,7 +17,12 @@ router.post('/', async (req, res) => {
 })
 router.get('/', async (req, res) => res.json(await User.findAll({ include: { model: Blog, attributes: { exclude: ['userId'] } }, order: [['id', 'ASC']] })))
 router.get('/:id', async (req, res) => {
-  const user = await User.findByPk(id(req.params.id), { include: { model: Blog, attributes: { exclude: ['userId'] } } })
+  if (req.query.read !== undefined && !['true', 'false'].includes(req.query.read)) throw failure(400, 'read must be true or false')
+  const through = { attributes: ['id', 'read'] }
+  if (req.query.read !== undefined) through.where = { read: req.query.read === 'true' }
+  const user = await User.findByPk(id(req.params.id), {
+    include: [{ model: Blog }, { model: Blog, as: 'readings', through, required: false }]
+  })
   if (!user) throw failure(404, 'user not found')
   res.json(user)
 })

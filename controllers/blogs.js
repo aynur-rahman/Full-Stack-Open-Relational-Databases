@@ -13,11 +13,11 @@ router.get('/', async (req, res) => {
   res.json(await Blog.findAll({ where, include: creator, order: [['likes', 'DESC'], ['id', 'ASC']] }))
 })
 router.post('/', authenticate, async (req, res) => {
-  const { title, url, author, likes } = req.body || {}
+  const { title, url, author, likes, year } = req.body || {}
   if (typeof title !== 'string' || !title.trim() || typeof url !== 'string' || !url.trim()) throw failure(400, 'title and url are required')
   if (author !== undefined && author !== null && typeof author !== 'string') throw failure(400, 'author must be text')
   if (likes !== undefined && (!Number.isInteger(likes) || likes < 0)) throw failure(400, 'likes must be a nonnegative integer')
-  const blog = await Blog.create({ title: title.trim(), url: url.trim(), author, likes, userId: req.user.id })
+  const blog = await Blog.create({ title: title.trim(), url: url.trim(), author, likes, year, userId: req.user.id })
   res.status(201).json(await Blog.findByPk(blog.id, { include: creator }))
 })
 router.put('/:id', async (req, res) => {

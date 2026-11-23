@@ -1,0 +1,20 @@
+const router = require('express').Router()
+const { User, Blog, ReadingList } = require('../models')
+const { authenticate, failure, id } = require('../util/middleware')
+const serialize = entry => ({ id: entry.id, user_id: entry.userId, blog_id: entry.blogId, read: entry.read })
+router.post('/', async (req, res) => {
+  const userId = id(req.body?.userId)
+  const blogId = id(req.body?.blogId)
+  if (!await User.findByPk(userId)) throw failure(404, 'user not found')
+  if (!await Blog.findByPk(blogId)) throw failure(404, 'blog not found')
+  res.status(201).json(serialize(await ReadingList.create({ userId, blogId, read: false })))
+})
+router.put('/:id', authenticate, async (req, res) => {
+  const entry = await ReadingList.findByPk(id(req.params.id))
+  if (!entry) throw failure(404, 'reading-list entry not found')
+  if (entry.userId !== req.user.id) throw failure(401, 'reading-list entry belongs to another user')
+  if (typeof req.body?.read !== 'boolean') throw failure(400, 'read must be a boolean')
+  await entry.update({ read: req.body.read })
+  res.json(serialize(entry))
+})
+module.exports = router
